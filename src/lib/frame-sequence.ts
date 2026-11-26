@@ -59,6 +59,12 @@ export class FrameSequence {
   private readonly t: Tuning;
   private readonly staticOrder: number[];
   private staticPos = 0;
+  /** Vor der ersten Scrollbewegung nur die ersten Frames laden (spart Daten und Startzeit). */
+  private warmCount: number;
+  private full = false;
+  private activeFetchers = 0;
+  private fullTimer = 0;
+  private flip = false;
   private ctx: CanvasRenderingContext2D | null = null;
   private canvas: HTMLCanvasElement | null = null;
   private target = 0;
@@ -76,7 +82,7 @@ export class FrameSequence {
     this.t = TUNING[isCoarsePointer() ? 'touch' : 'desktop'];
     this.opts = { focusX: 0.5, focusY: 0.5, onReady: () => {}, ...opts };
     this.blobs = Array.from({ length: opts.count }, () => null);
-    // Erstes Kapitel dicht (dort startet jeder Besuch), danach grob → fein über den Rest.
+    // Anfang dicht (dort startet jeder Besuch), danach grob → fein über den ganzen Film.
     const n = opts.count;
     const seen = new Set<number>();
     const order: number[] = [];
@@ -86,10 +92,11 @@ export class FrameSequence {
         order.push(i);
       }
     };
-    for (let i = 0; i < Math.ceil(n / 3); i++) push(i);
+    for (let i = 0; i < Math.min(n, 24); i++) push(i);
     for (const step of [8, 4, 2, 1]) for (let i = 0; i < n; i += step) push(i);
     push(n - 1);
     this.staticOrder = order;
+    this.warmCount = Math.min(n, 24);
   }
 
   attach(canvas: HTMLCanvasElement) {
@@ -102,7 +109,24 @@ export class FrameSequence {
   load() {
     if (this.started || this.disposed) return;
     this.started = true;
-    for (let k = 0; k < this.t.fetchers; k++) void this.fetchWorker();
+    this.pump();
+    // Spätestens nach ein paar Sekunden Ruhe den Rest im Hintergrund nachladen.
+    this.fullTimer = window.setTimeout(() => this.loadAll(), 4000);
+  }
+
+  private loadAll() {
+    if (this.full) return;
+    this.full = true;
+    window.clearTimeout(this.fullTimer);
+    this.pump();
+  }
+
+  private pump() {
+    if (!this.started || this.disposed) return;
+    while (this.activeFetchers < this.t.fetchers) {
+      this.activeFetchers++;
+      void this.fetchWorker().finally(() => this.activeFetchers--);
+    }
   }
 
   /** Canvas = CSS-Größe × gedeckelte Pixeldichte, aber nie größer als die Frames selbst. */
@@ -130,6 +154,8 @@ export class FrameSequence {
     if (next !== this.target) this.dir = next > this.target ? 1 : -1;
     this.target = next;
     if (!this.ready) this.current = next; // vor dem ersten Bild: direkt springen
+    if (p > 0.002) this.loadAll();
+    this.pump();
     this.kick();
   }
 
@@ -222,14 +248,26 @@ export class FrameSequence {
 
   /** Nächster zu ladender Frame: fehlende vor der Position zuerst, sonst die feste Reihenfolge. */
   private nextFetch(): number {
+    // Abwechselnd: einmal nahe der Position, einmal grob → fein über den Film. So gibt es auch
+    // bei schnellem Scrollen über langsames Netz immer ein Bild in der Nähe.
+    this.flip = !this.flip;
+    if (this.flip) {
+      const i = this.nextStatic();
+      if (i >= 0) return i;
+    }
     const want = Math.round(this.current);
     const n = this.opts.count;
-    for (let d = 0; d <= 24; d++) {
+    for (let d = 0; d <= 16; d++) {
       for (const i of d <= 3 ? [want + this.dir * d, want - this.dir * d] : [want + this.dir * d]) {
         if (i >= 0 && i < n && this.missing(i)) return i;
       }
     }
-    while (this.staticPos < this.staticOrder.length) {
+    return this.nextStatic();
+  }
+
+  private nextStatic(): number {
+    const limit = this.full ? this.staticOrder.length : this.warmCount;
+    while (this.staticPos < limit) {
       const i = this.staticOrder[this.staticPos];
       if (this.missing(i)) return i;
       this.staticPos++;
@@ -321,6 +359,7 @@ export class FrameSequence {
   dispose() {
     this.disposed = true;
     cancelAnimationFrame(this.raf);
+    window.clearTimeout(this.fullTimer);
     this.abort.abort();
     this.clearCache();
     this.canvas = null;
