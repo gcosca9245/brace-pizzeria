@@ -1,0 +1,213 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: 'Hanken Grotesk Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-heading: 'Bodoni Moda Variable', 'Bodoni 72', Didot, serif;
+  --font-display: 'Bodoni Moda Variable', 'Bodoni 72', Didot, serif;
+  --color-mehl: var(--mehl);
+  --color-mehl-2: var(--mehl-2);
+  --color-kohle: var(--kohle);
+  --color-ofen: var(--ofen);
+  --color-asche: var(--asche);
+  --color-asche-hell: var(--asche-hell);
+  --color-glut: var(--glut);
+  --color-pomodoro: var(--pomodoro);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  /* BRACE – Markenfarben */
+  --kohle: #1d1714;       /* warmes Anthrazit, Haupttext & dunkle Flächen */
+  --ofen: #0f0c0a;        /* Filmhintergrund */
+  --mehl: #f4efe7;        /* Mehlweiß, helle Flächen */
+  --mehl-2: #ebe4d9;      /* abgesetzte helle Fläche */
+  --asche: #6f665e;       /* Sekundärtext auf hell (≥ 4.5:1) */
+  --asche-hell: #b4aba1;  /* Sekundärtext auf dunkel */
+  --glut: #e9894a;        /* Ofenglut, nur für Akzente im Dunkeln */
+  --pomodoro: #b8321c;    /* Handlungsfarbe (Bestellen), sparsam */
+  --pomodoro-hover: #9f2a17;
+
+  --background: var(--mehl);
+  --foreground: var(--kohle);
+  --card: #fbf8f3;
+  --card-foreground: var(--kohle);
+  --popover: #fbf8f3;
+  --popover-foreground: var(--kohle);
+  --primary: var(--pomodoro);
+  --primary-foreground: #fff8f1;
+  --secondary: var(--mehl-2);
+  --secondary-foreground: var(--kohle);
+  --muted: var(--mehl-2);
+  --muted-foreground: var(--asche);
+  --accent: #e7dfd2;
+  --accent-foreground: var(--kohle);
+  --destructive: #a3261a;
+  --border: #ddd4c7;
+  --input: #d3c9bb;
+  --ring: #b8321c;
+  --chart-1: #b8321c;
+  --chart-2: #e9894a;
+  --chart-3: #6f665e;
+  --chart-4: #c9b79c;
+  --chart-5: #1d1714;
+  --radius: 0.75rem;
+  --sidebar: #1d1714;
+  --sidebar-foreground: #f4efe7;
+  --sidebar-primary: #e9894a;
+  --sidebar-primary-foreground: #1d1714;
+  --sidebar-accent: #2a221d;
+  --sidebar-accent-foreground: #f4efe7;
+  --sidebar-border: rgb(244 239 231 / 0.1);
+  --sidebar-ring: #e9894a;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.dark {
+  --background: var(--ofen);
+  --foreground: var(--mehl);
+  --card: #1d1714;
+  --card-foreground: var(--mehl);
+  --popover: #1d1714;
+  --popover-foreground: var(--mehl);
+  --primary: #c63a22;
+  --primary-foreground: #fff8f1;
+  --secondary: #2a221d;
+  --secondary-foreground: var(--mehl);
+  --muted: #2a221d;
+  --muted-foreground: var(--asche-hell);
+  --accent: #2a221d;
+  --accent-foreground: var(--mehl);
+  --destructive: #e0563f;
+  --border: rgb(244 239 231 / 0.12);
+  --input: rgb(244 239 231 / 0.18);
+  --ring: var(--glut);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+    scroll-padding-top: 5rem;
+  }
+  body {
+    font-feature-settings: 'ss01', 'tnum' 0;
+    -webkit-font-smoothing: antialiased;
+  }
+  a,
+  button,
+  input,
+  label,
+  [role='button'] {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  ::selection {
+    background: var(--glut);
+    color: var(--kohle);
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 3px;
+  }
+}
+
+/* Lenis (nur Desktop aktiv) */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-stopped {
+  overflow: clip;
+}
+
+@layer utilities {
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  .display {
+    font-family: var(--font-display);
+    font-optical-sizing: auto;
+    letter-spacing: -0.02em;
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+  .text-pretty {
+    text-wrap: pretty;
+  }
+  /* Filmkorn – fest positioniert, damit nichts beim Scrollen neu gerastert wird */
+  .grain::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.05;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.9'/></svg>");
+    mix-blend-mode: overlay;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
