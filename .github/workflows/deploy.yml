@@ -1,6 +1,7 @@
 # Veröffentlicht den statischen Export auf GitHub Pages (Branch gh-pages).
 # Der Upload-Weg dieses Repos unterstützt nur Text, deshalb kommen Inhalte base64-kodiert:
 #   deploy/part.*          kompletter Build (tar.gz), deploy/parts = erwartete Anzahl
+#   patch-upload/part.*    nur geänderte Build-Dateien (werden über gh-pages gelegt), patch-upload/parts = Anzahl
 #   _upload/source.tar.b64 Quelltext-Stand (wird nach main entpackt)
 # Erst wenn alle Teile da sind, wird veröffentlicht; danach werden die Upload-Reste aus main entfernt.
 name: Deploy
@@ -28,10 +29,11 @@ jobs:
       - name: Vollständigkeit prüfen
         id: check
         run: |
-          ready=false
-          if [ -f deploy/parts ] && [ "$(ls deploy/part.[0-9]* | wc -l)" = "$(cat deploy/parts)" ]; then ready=true; fi
-          echo "ready=$ready" >> "$GITHUB_OUTPUT"
-          echo "Teile: $(ls deploy/part.[0-9]* 2>/dev/null | wc -l) / $(cat deploy/parts 2>/dev/null)"
+          full=false; patch=false
+          if [ -f deploy/parts ] && [ "$(ls deploy/part.[0-9]* 2>/dev/null | wc -l)" = "$(cat deploy/parts)" ]; then full=true; fi
+          if [ -f patch-upload/parts ] && [ "$(ls patch-upload/part.[0-9]* 2>/dev/null | wc -l)" = "$(cat patch-upload/parts)" ]; then patch=true; fi
+          echo "ready=$full" >> "$GITHUB_OUTPUT"
+          echo "patch=$patch" >> "$GITHUB_OUTPUT"
 
       - name: Build entpacken
         if: steps.check.outputs.ready == 'true'
@@ -50,13 +52,25 @@ jobs:
           force_orphan: true
           enable_jekyll: false
 
+      - name: Build-Patch einspielen
+        if: steps.check.outputs.patch == 'true'
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin gh-pages
+          git worktree add /tmp/pages origin/gh-pages
+          cat $(ls patch-upload/part.[0-9]* | sort -V) | base64 -d | tar xzf - -C /tmp/pages
+          cd /tmp/pages && git add -A
+          git commit -qm "Patch ${GITHUB_SHA::7}" || exit 0
+          git push origin HEAD:gh-pages
+
       - name: Quelltext entpacken und Upload-Reste entfernen
-        if: steps.check.outputs.ready == 'true'
+        if: steps.check.outputs.ready == 'true' || steps.check.outputs.patch == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if [ -f _upload/source.tar.b64 ]; then base64 -d _upload/source.tar.b64 | tar -xf -; git rm -rq _upload; fi
-          git rm -rq deploy
+          for d in deploy patch-upload; do if [ -d "$d" ]; then git rm -rq "$d"; fi; done
           git add -A
           git commit -m "Upload entpackt [skip ci]"
           git push origin HEAD:main
