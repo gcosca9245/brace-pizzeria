@@ -1,5 +1,5 @@
 :HL["/brace-pizzeria/_next/static/chunks/44a0313mt14ay.css","style"]
-:HL["/brace-pizzeria/_next/static/chunks/1ohn9rk4gxc07.css","style"]
+:HL["/brace-pizzeria/_next/static/chunks/2u5mdvnly4hgj.css","style"]
 :HC["/",""]
 1:[["children",{"s":"__PAGE__","h":160}]]
-0:{"b":"oRbhuxfYQyM8JDUUVCsTZ","t":{"t":{"s":"","h":80,"c":"$Q1"}}}
+0:{"b":"Pn5u-lKPfNaHbzuNhTS8l","t":{"t":{"s":"","h":80,"c":"$Q1"}}}
