@@ -14,6 +14,7 @@ import type { Zone } from '@/lib/delivery';
 import { minutesToClock } from '@/lib/format';
 import { useLive } from '@/lib/hooks';
 import { WEEKDAYS } from '@/lib/site';
+import { Bento, Card, ZoneMap } from './ember';
 
 const toMin = (v: string) => {
   const [h, m] = v.split(':').map(Number);
@@ -34,7 +35,7 @@ function euroInput(cents: number) {
 
 export function SettingsPanel() {
   const [saved] = useLive(() => data.getSettings());
-  if (!saved) return <Skeleton className="h-96 rounded-2xl" />;
+  if (!saved) return <Skeleton className="h-96 rounded-[28px]" />;
   return <Editor saved={saved} />;
 }
 
@@ -68,9 +69,9 @@ function Editor({ saved }: { saved: Settings }) {
   };
 
   return (
-    <div className="grid gap-4 xl:grid-cols-12">
-      <section aria-labelledby="h-hours" className="rounded-2xl bg-card p-5 ring-1 ring-border md:p-6 xl:col-span-5">
-        <h2 id="h-hours" className="text-[15px] font-semibold">
+    <Bento className="xl:grid-cols-12">
+      <Card lift={false} aria-labelledby="h-hours" className="xl:col-span-5">
+        <h2 id="h-hours" className="text-[19px] font-semibold tracking-[-0.01em]">
           Öffnungszeiten
         </h2>
         <p className="mt-1 text-[13px] text-muted-foreground">Bestimmt die Zeitfenster an der Kasse.</p>
@@ -83,27 +84,27 @@ function Editor({ saved }: { saved: Settings }) {
                 <span className="text-[14px] text-muted-foreground">Ruhetag</span>
               ) : (
                 <span className="flex items-center gap-2">
-                  <Input type="time" step={900} value={minutesToClock(d.open)} onChange={(e) => setDay(i, { open: toMin(e.target.value) })} className="tabular h-9 w-[6.5rem]" aria-label={`${WEEKDAYS[i]} ab`} />
+                  <Input type="time" step={900} value={minutesToClock(d.open)} onChange={(e) => setDay(i, { open: toMin(e.target.value) })} className="tabular h-10 w-[7.75rem] rounded-full px-3" aria-label={`${WEEKDAYS[i]} ab`} />
                   <span aria-hidden="true">–</span>
-                  <Input type="time" step={900} value={minutesToClock(d.close)} onChange={(e) => setDay(i, { close: toMin(e.target.value) })} className="tabular h-9 w-[6.5rem]" aria-label={`${WEEKDAYS[i]} bis`} />
+                  <Input type="time" step={900} value={minutesToClock(d.close)} onChange={(e) => setDay(i, { close: toMin(e.target.value) })} className="tabular h-10 w-[7.75rem] rounded-full px-3" aria-label={`${WEEKDAYS[i]} bis`} />
                 </span>
               )}
             </li>
           ))}
         </ul>
-      </section>
+      </Card>
 
-      <section aria-labelledby="h-zones" className="rounded-2xl bg-card p-5 ring-1 ring-border md:p-6 xl:col-span-7">
+      <Card lift={false} aria-labelledby="h-zones" className="xl:col-span-7">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 id="h-zones" className="text-[15px] font-semibold">
+            <h2 id="h-zones" className="text-[19px] font-semibold tracking-[-0.01em]">
               Liefergebiete
             </h2>
             <p className="mt-1 text-[13px] text-muted-foreground">Die PLZ-Prüfung auf der Website liest genau diese Liste.</p>
           </div>
           <Button
             variant="outline"
-            size="sm"
+            className="h-10 rounded-full"
             onClick={() =>
               setDraft({ ...draft, zones: [...draft.zones, { id: `z${Date.now().toString(36)}`, name: '', plz: [], fee: 490, min: 3500, eta: [50, 65], active: false }] })
             }
@@ -111,9 +112,15 @@ function Editor({ saved }: { saved: Settings }) {
             <PlusIcon /> Zone
           </Button>
         </div>
-        <ul className="mt-5 flex flex-col gap-3">
+        <div className="relative mt-5 h-44 overflow-hidden rounded-[22px] bg-secondary">
+          <ZoneMap active={draft.zones.map((z) => z.active)} />
+          <p className="absolute bottom-3 left-3 rounded-full bg-card px-3 py-1.5 text-[12px] font-semibold">
+            {draft.zones.filter((z) => z.active).length} von {draft.zones.length} Zonen aktiv
+          </p>
+        </div>
+        <ul className="mt-4 flex flex-col gap-3">
           {draft.zones.map((z, i) => (
-            <li key={z.id} className="rounded-xl bg-secondary/60 p-4">
+            <li key={z.id} className="rounded-[22px] bg-secondary p-4">
               <div className="flex items-center gap-3">
                 <Input value={z.name} onChange={(e) => setZone(i, { name: e.target.value })} placeholder="Name der Zone" className="h-9 flex-1 bg-card font-medium" aria-label="Name der Zone" />
                 <Label className="flex items-center gap-2 text-[13px]">
@@ -154,23 +161,23 @@ function Editor({ saved }: { saved: Settings }) {
             </li>
           ))}
         </ul>
-      </section>
+      </Card>
 
-      <div className="sticky bottom-4 z-10 flex flex-wrap items-center justify-end gap-3 xl:col-span-12">
+      <div className="sticky bottom-24 z-10 md:bottom-4 flex flex-wrap items-center justify-end gap-3 xl:col-span-12">
         {errors.length > 0 && (
-          <ul role="alert" className="mr-auto rounded-xl bg-pomodoro/10 px-4 py-2 text-[14px] text-pomodoro">
+          <ul role="alert" className="mr-auto rounded-[20px] bg-[var(--e-down-bg)] px-4 py-2.5 text-[14px] font-medium text-[var(--e-down)]">
             {errors.map((e) => (
               <li key={e}>{e}</li>
             ))}
           </ul>
         )}
-        <Button variant="outline" disabled={!dirty} onClick={() => setDraft(structuredClone(saved))}>
+        <Button variant="outline" className="h-11 rounded-full bg-card px-5" disabled={!dirty} onClick={() => setDraft(structuredClone(saved))}>
           Verwerfen
         </Button>
-        <Button variant="brand" disabled={!dirty} onClick={save}>
+        <Button className="h-11 rounded-full px-6 font-semibold" disabled={!dirty} onClick={save}>
           Speichern
         </Button>
       </div>
-    </div>
+    </Bento>
   );
 }

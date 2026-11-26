@@ -111,3 +111,41 @@ export function customers(all: Order[]): Customer[] {
   }
   return [...m.values()].sort((a, b) => b.revenue - a.revenue);
 }
+
+const berlinDow = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Berlin', weekday: 'short' });
+const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+/** Wochentag in Berlin, 0 = Montag. */
+export const weekdayIndex = (ts: number) => DOW.indexOf(berlinDow.format(ts));
+
+/** Tagesziel: Ø Umsatz der letzten vier gleichen Wochentage (ganzer Tag). */
+export function dayTarget(all: Order[], now: number) {
+  const keys = new Set([1, 2, 3, 4].map((k) => dayKey(now - 7 * k * DAY)));
+  let sum = 0;
+  for (const o of all) if (valid(o) && keys.has(dayKey(o.createdAt))) sum += o.total;
+  return Math.round(sum / 4);
+}
+
+export const SLOT_HOURS = [17, 18, 19, 20, 21, 22];
+/** Ø Bestellungen je Wochentag und Stunde (4 Wochen) – für den Wochenplan. */
+export function slotHeat(all: Order[], now: number) {
+  const grid = Array.from({ length: 7 }, () => SLOT_HOURS.map(() => 0));
+  for (const o of all) {
+    if (!valid(o) || now - o.createdAt > 28 * DAY) continue;
+    const d = weekdayIndex(o.createdAt);
+    const h = SLOT_HOURS.indexOf(Number(berlinHour.format(o.createdAt)));
+    if (d >= 0 && h >= 0) grid[d][h] += 1;
+  }
+  return grid.map((row) => row.map((n) => Math.round((n / 4) * 10) / 10));
+}
+
+/** Lieferungen je Zone (30 Tage). */
+export function zoneCounts(all: Order[], now: number, zones: { id: string; plz: string[] }[]) {
+  const out: Record<string, number> = {};
+  for (const z of zones) out[z.id] = 0;
+  for (const o of all) {
+    if (!valid(o) || o.mode !== 'lieferung' || now - o.createdAt > 30 * DAY || !o.address) continue;
+    const z = zones.find((x) => x.plz.includes(o.address!.plz));
+    if (z) out[z.id] += 1;
+  }
+  return out;
+}

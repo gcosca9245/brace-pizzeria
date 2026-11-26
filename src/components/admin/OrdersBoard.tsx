@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { motion } from 'motion/react';
 import { ArrowRightIcon, BikeIcon, EllipsisIcon, ShoppingBagIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -27,46 +28,65 @@ async function move(o: Order, status: OrderStatus) {
   });
 }
 
-export function OrdersBoard({ orders }: { orders: Order[] | undefined }) {
+export function OrdersBoard({ orders, focusId, onFocusDone }: { orders: Order[] | undefined; focusId?: string | null; onFocusDone?: () => void }) {
   const now = useNow();
   const [openId, setOpenId] = useState<string | null>(null);
+  // Aus Suche oder Übersicht: direkt die Bestellung aufklappen
+  const activeId = openId ?? focusId ?? null;
+  const close = () => {
+    setOpenId(null);
+    onFocusDone?.();
+  };
   if (!orders)
     return (
       <div className="grid gap-4 md:grid-cols-5">
         {ORDER_STATUSES.map((s) => (
-          <Skeleton key={s} className="h-96 rounded-2xl" />
+          <Skeleton key={s} className="h-96 rounded-[28px]" />
         ))}
       </div>
     );
   const recent = orders.filter((o) => o.status !== 'geliefert' || now - o.createdAt < 3 * HOUR);
-  const open = orders.find((o) => o.id === openId) ?? null;
+  const open = orders.find((o) => o.id === activeId) ?? null;
   const cancelled = orders.filter((o) => o.status === 'storniert' && now - o.createdAt < 6 * HOUR);
 
   return (
     <>
-      <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-4 md:mx-0 md:grid md:snap-none md:grid-cols-5 md:overflow-visible md:px-0">
-        {ORDER_STATUSES.map((s) => {
+      <motion.div
+        initial="hidden"
+        animate="show"
+        variants={{ hidden: {}, show: { transition: { staggerChildren: 0.05 } } }}
+        className="-mx-3 flex snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-4 sm:-mx-5 sm:px-5 lg:mx-0 lg:grid lg:snap-none lg:grid-cols-5 lg:overflow-visible lg:px-0"
+      >
+        {ORDER_STATUSES.map((s, si) => {
           const col = recent.filter((o) => o.status === s).sort((a, b) => a.createdAt - b.createdAt);
           return (
-            <section key={s} aria-labelledby={`col-${s}`} className="w-[82vw] max-w-sm shrink-0 snap-start rounded-2xl bg-secondary/60 p-2.5 md:w-auto md:max-w-none">
-              <h2 id={`col-${s}`} className="flex items-center justify-between px-2 pt-1.5 pb-3 text-[14px] font-semibold">
-                {STATUS_LABEL[s]}
-                <span className="tabular rounded-full bg-card px-2 text-[12px] font-medium text-muted-foreground ring-1 ring-border">{col.length}</span>
+            <motion.section
+              key={s}
+              variants={{ hidden: { opacity: 0, y: 18 }, show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 260, damping: 30 } } }}
+              aria-labelledby={`col-${s}`}
+              className="w-[84vw] max-w-sm shrink-0 snap-start rounded-[28px] bg-card p-2.5 lg:w-auto lg:max-w-none"
+            >
+              <h2 id={`col-${s}`} className="flex items-center justify-between gap-2 px-2.5 pt-2 pb-3 text-[16px] font-semibold tracking-[-0.01em]">
+                <span className="flex items-center gap-2">
+                  <span className={cn('size-2.5 rounded-full', si === 0 ? 'bg-[var(--e-accent)]' : si === 4 ? 'bg-border' : 'bg-foreground')} aria-hidden="true" />
+                  {STATUS_LABEL[s]}
+                </span>
+                <span className="tabular grid h-7 min-w-7 place-items-center rounded-full bg-secondary px-2 text-[12px] font-semibold">{col.length}</span>
               </h2>
               <ul className="flex flex-col gap-2">
-                {col.length === 0 && <li className="rounded-xl border border-dashed border-border px-3 py-6 text-center text-[13px] text-muted-foreground">Leer</li>}
+                {col.length === 0 && <li className="rounded-[20px] border-[1.5px] border-dashed border-border px-3 py-8 text-center text-[13px] text-muted-foreground">Nichts in dieser Spalte</li>}
                 {col.map((o) => (
                   <OrderCard key={o.id} o={o} now={now} onOpen={() => setOpenId(o.id)} />
                 ))}
               </ul>
-            </section>
+            </motion.section>
           );
         })}
-      </div>
+      </motion.div>
       {cancelled.length > 0 && <p className="mt-2 text-[13px] text-muted-foreground">Storniert (6 Std.): {cancelled.map((o) => o.code).join(', ')}</p>}
 
-      <Sheet open={!!open} onOpenChange={(v) => !v && setOpenId(null)}>
-        <SheetContent className="w-full overflow-y-auto sm:max-w-md">
+      <Sheet open={!!open} onOpenChange={(v) => !v && close()}>
+        <SheetContent className="w-full overflow-y-auto border-0 sm:m-3 sm:h-[calc(100dvh-1.5rem)] sm:max-w-md sm:rounded-[28px]">
           {open && (
             <>
               <SheetHeader>
@@ -89,7 +109,7 @@ export function OrdersBoard({ orders }: { orders: Order[] | undefined }) {
                     </li>
                   ))}
                 </ul>
-                {open.note && <p className="rounded-lg bg-glut/15 px-3 py-2">„{open.note}“</p>}
+                {open.note && <p className="rounded-2xl bg-[var(--e-peach)] px-4 py-3">„{open.note}“</p>}
                 <Separator />
                 <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2">
                   <dt className="text-muted-foreground">Kunde</dt>
@@ -126,7 +146,7 @@ export function OrdersBoard({ orders }: { orders: Order[] | undefined }) {
                 {open.status !== 'storniert' && open.status !== 'geliefert' && (
                   <div className="flex gap-2">
                     <NextButton o={open} className="flex-1" />
-                    <Button variant="outline" onClick={() => move(open, 'storniert')}>
+                    <Button variant="outline" className="h-10 rounded-full" onClick={() => move(open, 'storniert')}>
                       Stornieren
                     </Button>
                   </div>
@@ -145,7 +165,11 @@ function NextButton({ o, className }: { o: Order; className?: string }) {
   const next = i >= 0 ? ORDER_STATUSES[i + 1] : undefined;
   if (!next) return null;
   return (
-    <Button size="sm" variant={o.status === 'neu' ? 'brand' : 'default'} className={cn('h-9', className)} onClick={() => move(o, next)}>
+    <Button
+      size="sm"
+      className={cn('h-10 rounded-full font-semibold', o.status === 'neu' ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'bg-foreground text-background hover:bg-foreground/85', className)}
+      onClick={() => move(o, next)}
+    >
       {o.status === 'neu' ? 'Annehmen' : statusLabel(next, o.mode)}
       <ArrowRightIcon />
     </Button>
@@ -157,7 +181,7 @@ function OrderCard({ o, now, onOpen }: { o: Order; now: number; onOpen: () => vo
   const late = o.status !== 'geliefert' && o.status !== 'storniert' && now > o.etaAt;
   const items = o.lines.reduce((s, l) => s + l.qty, 0);
   return (
-    <li className={cn('rounded-xl bg-card p-3 shadow-[0_1px_0_rgb(0_0_0/0.04)] ring-1 ring-border', o.status === 'neu' && 'ring-2 ring-pomodoro/70')}>
+    <li className={cn('rounded-[22px] bg-secondary p-3.5 transition-shadow', o.status === 'neu' && 'ring-2 ring-[var(--e-accent)]')}>
       <div className="flex items-start justify-between gap-2">
         <button type="button" onClick={onOpen} className="min-w-0 text-left" aria-label={`${o.code} von ${o.customer.name} öffnen`}>
           <p className="tabular text-[13px] text-muted-foreground">
@@ -193,7 +217,7 @@ function OrderCard({ o, now, onOpen }: { o: Order; now: number; onOpen: () => vo
           {items} Art. · <b className="font-semibold">{formatEuro(o.total)}</b>
         </span>
       </div>
-      <p className={cn('tabular mt-1 text-[12px]', late ? 'font-medium text-pomodoro' : 'text-muted-foreground')}>
+      <p className={cn('tabular mt-1 text-[12px]', late ? 'font-semibold text-[var(--e-down)]' : 'text-muted-foreground')}>
         {o.status === 'geliefert' ? `${statusLabel('geliefert', o.mode)}` : `${late ? 'Überfällig seit' : 'Geplant'} ${formatTime(o.etaAt)} Uhr`}
       </p>
       {o.status !== 'geliefert' && <NextButton o={o} className="mt-3 w-full" />}

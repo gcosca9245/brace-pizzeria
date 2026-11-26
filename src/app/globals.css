@@ -223,3 +223,75 @@ html.lenis body {
     transform: none;
   }
 }
+
+/* ── Küche (/admin): eigener heller „Ember“-Look, per Klasse auf <html> ─────────── */
+html.ember {
+  --e-canvas: #f2f0f5;
+  --e-frame: #e4e2e7;
+  --e-ink: #12111a;
+  --e-accent: #e06539;
+  --e-peach: #f8d4c2;
+  --e-up-bg: #ddf5e3;
+  --e-up: #17663a;
+  --e-down-bg: #fbe1e6;
+  --e-down: #a3203d;
+  --e-pop: #262426;
+  --e-hatch: #d9d6de;
+  --background: var(--e-canvas);
+  --foreground: var(--e-ink);
+  --card: #ffffff;
+  --card-foreground: var(--e-ink);
+  --popover: #ffffff;
+  --popover-foreground: var(--e-ink);
+  --primary: #c24e27;
+  --primary-foreground: #ffffff;
+  --secondary: #f2f0f5;
+  --secondary-foreground: var(--e-ink);
+  --muted: #f2f0f5;
+  --muted-foreground: #6b6875;
+  --accent: #ebe8ef;
+  --accent-foreground: var(--e-ink);
+  --destructive: #a3203d;
+  --border: #e6e3ea;
+  --input: #dcd8e1;
+  --ring: #c24e27;
+  --radius: 1rem;
+  --pomodoro: #c24e27;
+  --glut: #e06539;
+  --kohle: var(--e-ink);
+  color-scheme: light;
+}
+html.ember.ember-dark {
+  --e-canvas: #121118;
+  --e-frame: #0b0a0f;
+  --e-ink: #f2f0f5;
+  --e-peach: #5a3427;
+  --e-up-bg: #173322;
+  --e-up: #8fe0a6;
+  --e-down-bg: #3a1720;
+  --e-down: #ff9fb2;
+  --e-pop: #2b2930;
+  --e-hatch: #34313b;
+  --card: #1b1a22;
+  --popover: #1b1a22;
+  --secondary: #24222b;
+  --muted: #24222b;
+  --muted-foreground: #a9a6b2;
+  --accent: #2b2932;
+  --border: rgb(255 255 255 / 0.08);
+  --input: rgb(255 255 255 / 0.14);
+  --kohle: #f2f0f5;
+  color-scheme: dark;
+}
+html.ember body {
+  background: var(--e-canvas);
+  font-family: 'Plus Jakarta Sans Variable', ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: normal;
+}
+html.ember ::selection {
+  background: var(--e-peach);
+  color: var(--e-ink);
+}
+html.k-session .k-login-ssr {
+  visibility: hidden;
+}
