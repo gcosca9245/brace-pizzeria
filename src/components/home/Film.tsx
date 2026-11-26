@@ -1,12 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import SplitText from '@/components/SplitText';
 import { LinkButton } from '@/components/ui/button';
 import { OrderDock } from '@/components/home/OrderDock';
 import { CHAPTERS, filmSource, posterUrl } from '@/lib/film';
 import { FrameSequence } from '@/lib/frame-sequence';
-import { getGsap } from '@/lib/gsap';
 import { useReducedMotion } from '@/lib/hooks';
 import { asset } from '@/lib/asset';
 import { cn } from '@/lib/utils';
@@ -45,7 +43,9 @@ export function Film() {
     const seq = new FrameSequence({
       urlFor: src.urlFor,
       count: src.count,
-      focusX: src.variant === 'p720' ? 0.5 : 0.62,
+      frameWidth: src.frameWidth,
+      frameHeight: src.frameHeight,
+      focusX: src.variant === 'p640' ? 0.5 : 0.62,
       focusY: 0.5,
       onReady: () => setReady(true),
     });
@@ -54,47 +54,57 @@ export function Film() {
     ro.observe(cv);
 
     // Bytes erst laden, wenn die Startseite steht (LCP ist das Poster).
-    const start = () => void seq.load();
+    const start = () => seq.load();
     const hasIdle = typeof window.requestIdleCallback === 'function';
     const idle = hasIdle ? window.requestIdleCallback(start, { timeout: 1500 }) : setTimeout(start, 600);
 
-    const { gsap, ScrollTrigger } = getGsap();
-    const coarse = window.matchMedia('(pointer: coarse)').matches;
-    const q = gsap.utils.selector(el);
-    const ctx = gsap.context(() => {
-      const proxy = { p: 0 };
-      const tl = gsap.timeline({
-        defaults: { ease: 'none' },
-        scrollTrigger: {
+    // GSAP erst nachladen, wenn die Seite steht – hält das Start-JS klein.
+    let ctx: { revert: () => void } | null = null;
+    let cancelled = false;
+    void import('@/lib/gsap').then(({ getGsap }) => {
+      if (cancelled) return;
+      const { gsap, ScrollTrigger } = getGsap();
+      const coarse = window.matchMedia('(pointer: coarse)').matches;
+      const q = gsap.utils.selector(el);
+      ctx = gsap.context(() => {
+        // Film: ungeglätteter Scrollfortschritt; die Dämpfung macht der Player selbst pro Bild.
+        const film = ScrollTrigger.create({
           trigger: el,
           start: 'top top',
           end: 'bottom bottom',
-          // Desktop: Lenis glättet bereits; Touch: leichtes Nachziehen gegen Ruckeln
-          scrub: coarse ? 0.35 : true,
           invalidateOnRefresh: true,
-        },
-      });
-      tl.to(proxy, { p: 1, duration: 1, onUpdate: () => seq.setProgress(proxy.p) }, 0);
-      // Intro raus
-      tl.to(q('[data-intro]'), { autoAlpha: 0, y: -40, duration: 0.05, ease: 'power1.in' }, 0.015);
-      tl.to(q('[data-shade]'), { opacity: 0.55, duration: 0.05 }, 0.02);
-      // Kapitel
-      CHAPTERS.forEach((c, i) => {
-        const cap = q(`[data-chapter="${i}"]`);
-        const inAt = c.from + (i === 0 ? 0.05 : 0.02);
-        tl.fromTo(cap, { autoAlpha: 0, y: 48 }, { autoAlpha: 1, y: 0, duration: 0.04, ease: 'power2.out' }, inAt);
-        tl.to(cap, { autoAlpha: 0, y: -36, duration: 0.035, ease: 'power2.in' }, c.to - (i === 2 ? 0.1 : 0.05));
-        tl.fromTo(q(`[data-bar="${i}"]`), { scaleX: 0 }, { scaleX: 1, duration: c.to - c.from }, c.from);
-      });
-      // Abschluss
-      tl.fromTo(q('[data-outro]'), { autoAlpha: 0, y: 40 }, { autoAlpha: 1, y: 0, duration: 0.05, ease: 'power2.out' }, 0.93);
-      tl.fromTo(q('[data-rail]'), { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.03 }, 0.03);
-      tl.to(q('[data-rail]'), { autoAlpha: 0, duration: 0.03 }, 0.95);
-    }, el);
-    ScrollTrigger.refresh();
+          onUpdate: (self) => seq.setProgress(self.progress),
+          onRefresh: (self) => seq.setProgress(self.progress),
+        });
+        seq.setProgress(film.progress);
+        // Texte und Leiste: gleiche Strecke, leicht nachgezogen wie der Film
+        const tl = gsap.timeline({
+          defaults: { ease: 'none' },
+          scrollTrigger: { trigger: el, start: 'top top', end: 'bottom bottom', scrub: coarse ? 0.25 : true, invalidateOnRefresh: true },
+        });
+        // Intro raus
+        tl.to(q('[data-intro]'), { autoAlpha: 0, y: -40, duration: 0.05, ease: 'power1.in' }, 0.015);
+        tl.to(q('[data-shade]'), { opacity: 0.55, duration: 0.05 }, 0.02);
+        // Kapitel
+        CHAPTERS.forEach((c, i) => {
+          const cap = q(`[data-chapter="${i}"]`);
+          const inAt = c.from + (i === 0 ? 0.05 : 0.02);
+          tl.fromTo(cap, { autoAlpha: 0, y: 48 }, { autoAlpha: 1, y: 0, duration: 0.04, ease: 'power2.out' }, inAt);
+          tl.to(cap, { autoAlpha: 0, y: -36, duration: 0.035, ease: 'power2.in' }, c.to - (i === 2 ? 0.1 : 0.05));
+          tl.fromTo(q(`[data-bar="${i}"]`), { scaleX: 0 }, { scaleX: 1, duration: c.to - c.from }, c.from);
+        });
+        // Abschluss
+        tl.fromTo(q('[data-outro]'), { autoAlpha: 0, y: 40 }, { autoAlpha: 1, y: 0, duration: 0.05, ease: 'power2.out' }, 0.93);
+        tl.fromTo(q('[data-rail]'), { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.03 }, 0.03);
+        tl.to(q('[data-rail]'), { autoAlpha: 0, duration: 0.03 }, 0.95);
+        tl.set({}, {}, 1); // Timeline-Länge exakt 1
+      }, el);
+      ScrollTrigger.refresh();
+    });
 
     return () => {
-      ctx.revert();
+      cancelled = true;
+      ctx?.revert();
       ro.disconnect();
       if (hasIdle) window.cancelIdleCallback(idle as number);
       else clearTimeout(idle);
@@ -114,8 +124,8 @@ export function Film() {
       <div className="sticky top-0 h-[100svh] overflow-hidden">
         {/* Poster = LCP; das Canvas legt sich darüber, sobald der erste Frame dekodiert ist. */}
         <picture>
-          <source media="(max-aspect-ratio: 4/5)" type="image/avif" srcSet={posterUrl('p720', 'avif')} />
-          <source media="(max-aspect-ratio: 4/5)" srcSet={posterUrl('p720', 'webp')} />
+          <source media="(max-aspect-ratio: 4/5)" type="image/avif" srcSet={posterUrl('p640', 'avif')} />
+          <source media="(max-aspect-ratio: 4/5)" srcSet={posterUrl('p640', 'webp')} />
           <source type="image/avif" srcSet={posterUrl('d1920', 'avif')} />
           <img
             src={posterUrl('d1920', 'webp')}
@@ -147,18 +157,15 @@ export function Film() {
               </p>
               <h1 className="sr-only">Brace – Pizzeria in Köln-Ehrenfeld</h1>
               <div aria-hidden="true">
-              <SplitText
-                text="Brace"
-                tag="p"
-                className="display -ml-[0.04em] text-[clamp(5.5rem,22vw,21rem)] leading-[0.78] font-[650] text-mehl"
-                textAlign="left"
-                splitType="chars"
-                effect="rise"
-                trigger="load"
-                delay={55}
-                duration={1.1}
-                mask
-              />
+              <p className="display -ml-[0.04em] text-[clamp(5.5rem,22vw,21rem)] leading-[0.78] font-[650] text-mehl">
+                {'Brace'.split('').map((ch, i) => (
+                  <span key={i} className="inline-block overflow-hidden pb-[0.06em] align-bottom">
+                    <span className="wordmark-rise inline-block" style={{ animationDelay: `${i * 55}ms` }}>
+                      {ch}
+                    </span>
+                  </span>
+                ))}
+              </p>
               </div>
             </div>
             <OrderDock />
@@ -217,7 +224,7 @@ export function Film() {
 
 /** „Bewegung reduzieren“: drei ruhige Standbilder statt Film. */
 function StaticFilm() {
-  const frames = [40, 105, 170];
+  const frames = [56, 146, 236];
   return (
     <section id="film" aria-label="Wie eine Brace-Pizza entsteht" className="dark bg-ofen text-mehl">
       <div className="relative min-h-[100svh]">

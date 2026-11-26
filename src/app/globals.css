@@ -211,3 +211,15 @@ html.lenis body {
     scroll-behavior: auto !important;
   }
 }
+/* Wortmarke „Brace“: Buchstaben steigen aus einer Maske (reines CSS, kein Start-JS) */
+.wordmark-rise {
+  animation: wordmark-rise 1.1s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes wordmark-rise {
+  from {
+    transform: translateY(105%);
+  }
+  to {
+    transform: none;
+  }
+}

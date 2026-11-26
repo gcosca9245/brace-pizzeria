@@ -10,10 +10,11 @@ const OUT = 'public/media';
 const ONLY = process.argv[2];
 
 const variants = [
-  // step: jedes n-te Bild aus 24 fps. Zwischenbilder blendet der Player weich über.
-  { dir: 'film/d1920', file: 'film-16x9.mp4', vf: 'crop=1920:1080:0:4', q: '60', step: 4 },
-  { dir: 'film/d1280', file: 'film-16x9.mp4', vf: 'crop=1920:1080:0:4,scale=1280:720:flags=lanczos', q: '64', step: 4 },
-  { dir: 'film/p720', file: 'film-9x16.mp4', vf: 'crop=1080:1920:4:0,scale=720:1280:flags=lanczos', q: '56', step: 5 },
+  // step 3: jedes dritte Bild aus 24 fps (8 Bilder pro Filmsekunde). Harte Schnitte zwischen
+  // den drei Clips (film-cut-*), keine Überblendung – der Player zeigt immer genau ein Bild.
+  { dir: 'film/d1920', file: 'film-cut-16x9.mp4', vf: 'crop=1920:1080:0:4', q: '56', step: 3 },
+  { dir: 'film/d1280', file: 'film-cut-16x9.mp4', vf: 'crop=1920:1080:0:4,scale=1280:720:flags=lanczos', q: '60', step: 3 },
+  { dir: 'film/p640', file: 'film-cut-9x16.mp4', vf: 'crop=1080:1920:4:0,scale=640:1138:flags=lanczos', q: '56', step: 3 },
 ];
 
 import { existsSync, readFileSync } from 'node:fs';
@@ -38,6 +39,7 @@ if (!ONLY || ONLY === 'film') {
     manifest.film[v.dir.split('/')[1]] = files.length;
     console.log(v.dir, files.length, 'Frames', (bytes / 1e6).toFixed(1), 'MB');
   }
+  delete manifest.film.p720;
   writeFileSync(MANIFEST, JSON.stringify(manifest, null, 2) + '\n');
 }
 
