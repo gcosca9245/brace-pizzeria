@@ -99,6 +99,8 @@ function demoOrder(r: () => number, at: number, status: OrderStatus, menu: MenuI
   const subtotal = lines.reduce((s, l) => s + l.qty * l.unit, 0);
   const mode = r() < 0.72 ? 'lieferung' : 'abholung';
   const fee = mode === 'lieferung' ? c.zone.fee : 0;
+  // Tatsächliche Dauer bis zur Übergabe, meist innerhalb des angekündigten Fensters
+  const doneMin = Math.round(mode === 'lieferung' ? c.zone.eta[0] - 4 + r() * (c.zone.eta[1] - c.zone.eta[0] + 8) : 12 + r() * 10);
   return {
     id: uid(),
     code: `B-${Math.floor(1000 + r() * 9000)}`,
@@ -115,7 +117,7 @@ function demoOrder(r: () => number, at: number, status: OrderStatus, menu: MenuI
     etaAt: at + (mode === 'lieferung' ? c.zone.eta[1] : 20) * 60_000,
     payment: { method: (['karte', 'paypal', 'bar'] as const)[Math.floor(r() * 3)], ref: 'DEMO' },
     status,
-    log: [{ status, at }],
+    log: status === 'geliefert' ? [{ status: 'neu', at }, { status, at: at + doneMin * 60_000 }] : [{ status, at }],
     autopilot: false,
   };
 }
