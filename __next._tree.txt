@@ -2,4 +2,4 @@
 :HL["/brace-pizzeria/_next/static/chunks/2u5mdvnly4hgj.css","style"]
 :HC["/",""]
 1:[["children",{"s":"__PAGE__","h":160}]]
-0:{"b":"Pn5u-lKPfNaHbzuNhTS8l","t":{"t":{"s":"","h":80,"c":"$Q1"}}}
+0:{"b":"TP0T4riHIWCpTlUx7MSoS","t":{"t":{"s":"","h":80,"c":"$Q1"}}}
