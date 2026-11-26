@@ -4,7 +4,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { PlusIcon, ShoppingBagIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { CartPanel } from '@/components/order/CartPanel';
-import { ItemConfigurator } from '@/components/order/ItemConfigurator';
+import dynamic from 'next/dynamic';
+
+// Konfigurator (Dialog, Formular) erst laden, wenn er gebraucht wird.
+const ItemConfigurator = dynamic(() => import('@/components/order/ItemConfigurator').then((m) => m.ItemConfigurator), { ssr: false });
 import { Picture } from '@/components/Picture';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
