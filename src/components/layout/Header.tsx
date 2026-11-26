@@ -25,20 +25,10 @@ export function Header() {
   useEffect(() => {
     const film = document.getElementById('film');
     if (!film) return;
-    let raf = 0;
-    const update = () => {
-      raf = 0;
-      setOverFilm(film.getBoundingClientRect().bottom > 64);
-    };
-    const on = () => {
-      if (!raf) raf = requestAnimationFrame(update);
-    };
-    update();
-    window.addEventListener('scroll', on, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', on);
-      cancelAnimationFrame(raf);
-    };
+    // IntersectionObserver: meldet nur den Wechsel (Film unter der Kopfzeile ja/nein), kein Code pro Scrollbild.
+    const io = new IntersectionObserver(([e]) => setOverFilm(e.isIntersecting), { rootMargin: '-64px 0px 0px 0px' });
+    io.observe(film);
+    return () => io.disconnect();
   }, [pathname]);
 
   if (pathname.startsWith('/admin')) return null;

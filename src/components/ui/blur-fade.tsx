@@ -47,17 +47,22 @@ export function BlurFade({
   const ref = useRef(null)
   const inViewResult = useInView(ref, { once: true, margin: inViewMargin })
   const isInView = !inView || inViewResult
+  // Auf Touch-Geräten kostet eine animierte Unschärfe über großen Bildern sichtbar Frames –
+  // dort nur Deckkraft und Versatz (Compositor-only). Desktop behält den Blur.
+  const useBlur =
+    blur !== "0px" &&
+    !(typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches)
   const defaultVariants: Variants = {
     hidden: {
       [direction === "left" || direction === "right" ? "x" : "y"]:
         direction === "right" || direction === "down" ? -offset : offset,
       opacity: 0,
-      filter: `blur(${blur})`,
+      ...(useBlur ? { filter: `blur(${blur})` } : {}),
     },
     visible: {
       [direction === "left" || direction === "right" ? "x" : "y"]: 0,
       opacity: 1,
-      filter: `blur(0px)`,
+      ...(useBlur ? { filter: `blur(0px)` } : {}),
     },
   }
   const combinedVariants = variant ?? defaultVariants

@@ -33,12 +33,14 @@ export function Film() {
   const reduced = useReducedMotion();
   const section = useRef<HTMLElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
+  const canvasTop = useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const el = section.current;
     const cv = canvas.current;
-    if (!el || !cv || reduced) return;
+    const cvTop = canvasTop.current;
+    if (!el || !cv || !cvTop || reduced) return;
     const src = filmSource(cv.clientWidth, cv.clientHeight);
     const seq = new FrameSequence({
       urlFor: src.urlFor,
@@ -49,7 +51,7 @@ export function Film() {
       focusY: 0.5,
       onReady: () => setReady(true),
     });
-    seq.attach(cv);
+    seq.attach(cv, cvTop);
     const ro = new ResizeObserver(() => seq.resize());
     ro.observe(cv);
 
@@ -133,14 +135,18 @@ export function Film() {
             width={1920}
             height={1080}
             fetchPriority="high"
-            className="absolute inset-0 size-full object-cover object-[62%_50%] [@media(max-aspect-ratio:4/5)]:object-center"
+            className={cn(
+              'absolute inset-0 size-full object-cover object-[62%_50%] [@media(max-aspect-ratio:4/5)]:object-center',
+              // Sobald das Canvas deckt, fällt das Poster aus dem Compositing (eine Vollbild-Ebene weniger pro Scrollbild).
+              ready && 'invisible transition-[visibility] delay-700',
+            )}
           />
         </picture>
-        <canvas
-          ref={canvas}
-          aria-hidden="true"
-          className={cn('absolute inset-0 size-full transition-opacity duration-500', ready ? 'opacity-100' : 'opacity-0')}
-        />
+        {/* Zwei Canvas übereinander: das obere blendet per Deckkraft stufenlos zum Nachbarbild über. */}
+        <div aria-hidden="true" className={cn('absolute inset-0 transition-opacity duration-500', ready ? 'opacity-100' : 'opacity-0')}>
+          <canvas ref={canvas} className="absolute inset-0 size-full" />
+          <canvas ref={canvasTop} className="absolute inset-0 size-full opacity-0 will-change-[opacity]" />
+        </div>
         {/* Ruhige Abdunklung links unten für Lesbarkeit – kein Farbverlauf als Deko */}
         <div
           data-shade

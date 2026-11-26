@@ -21,11 +21,20 @@ export function CartBar() {
   useEffect(() => {
     if (!home) return;
     // Im Film gibt es Bestell-Einstieg und Kopfzeile; die Leiste kommt erst danach, damit sie nichts verdeckt.
+    // IntersectionObserver statt Scroll-Listener: keine Layout-Abfrage und kein Render pro Scroll-Event.
     const film = document.getElementById('film');
-    const on = () => setScrolled(film ? film.getBoundingClientRect().bottom < window.innerHeight * 0.6 : window.scrollY > window.innerHeight * 0.35);
-    on();
-    window.addEventListener('scroll', on, { passive: true });
-    return () => window.removeEventListener('scroll', on);
+    if (!film) {
+      const on = () => setScrolled(window.scrollY > window.innerHeight * 0.35);
+      on();
+      window.addEventListener('scroll', on, { passive: true });
+      return () => window.removeEventListener('scroll', on);
+    }
+    // Sichtbar, sobald das Film-Ende über 60 % der Höhe liegt (= Film schneidet die unteren 40 % nicht mehr).
+    const io = new IntersectionObserver(([e]) => setScrolled(!e.isIntersecting && e.boundingClientRect.top < 0), {
+      rootMargin: '-60% 0px 0px 0px',
+    });
+    io.observe(film);
+    return () => io.disconnect();
   }, [home]);
 
   const hidden = pathname.startsWith('/admin') || pathname.startsWith('/kasse') || pathname.startsWith('/bestellung') || pathname.startsWith('/bestellen');
